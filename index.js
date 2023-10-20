@@ -27,7 +27,23 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
-    const userCollection = client.db('mediaDB').collection('user');
+    const userCollection = client.db("mediaDB").collection("user");
+
+    const mediaCollection = client.db("mediaDB").collection("media");
+
+
+
+    app.post('/media', async (req, res) => {
+      const newMedia = req.body;
+      const result = await mediaCollection.insertOne(newMedia);
+      res.send(result);
+    })
+
+    app.get("/media", async (req, res) => {
+      const cursor = mediaCollection.find();
+      const media = await cursor.toArray();
+      res.send(media);
+    });
 
     app.post('/user', async (req, res) => {
       const user = req.body;
