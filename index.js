@@ -45,12 +45,39 @@ async function run() {
       res.send(media);
     });
 
+    app.put('/media/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) }
+      const options = { upsert: true };
+      const updatedMedia = req.body;
+      const media = {
+        $set: {
+          name: updatedMedia.name,
+          photo: updatedMedia.photo,
+          brand: updatedMedia.brand,
+          type: updatedMedia.type,
+          price: updatedMedia.price,
+          description: updatedMedia.description,
+          rating: updatedMedia.rating,
+        },
+      };
+      const result = await mediaCollection.updateOne(filter, media, options);
+      res.send(result);
+    })
+
     app.delete('/media/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) }
       const result = await mediaCollection.deleteOne(query);
       res.send(result);
-    } )
+    });
+
+    app.get("/media/:id", async (req, res) => {
+      const id = req.params.id;
+       const query = { _id: new ObjectId(id) };
+       const result = await mediaCollection.findOne(query);
+       res.send(result);
+     });
 
     app.post('/user', async (req, res) => {
       const user = req.body;
