@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require("cors");
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 5000;
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 
@@ -31,7 +31,37 @@ async function run() {
 
     const mediaCollection = client.db("mediaDB").collection("media");
 
+    const cartCollection = client.db("mediaDB").collection("cart");
 
+
+
+    // cart 
+    app.post("/cart", async (req, res) => {
+      const newcart = req.body;
+      const result = await cartCollection.insertOne(newcart);
+      res.send(result);
+    });
+
+    app.get("/cart", async (req, res) => {
+      const cursor = cartCollection.find();
+      const cart = await cursor.toArray();
+      res.send(cart);
+    });
+
+    app.delete("/cart/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await cartCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    app.get("/cart/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await cartCollection.findOne(query);
+      res.send(result);
+    });
+    // cart end 
 
     app.post('/media', async (req, res) => {
       const newMedia = req.body;
@@ -45,25 +75,35 @@ async function run() {
       res.send(media);
     });
 
-    app.put('/media/:id', async (req, res) => {
-      const id = req.params.id;
-      const filter = { _id: new ObjectId(id) }
-      const options = { upsert: true };
-      const updatedMedia = req.body;
-      const media = {
-        $set: {
-          name: updatedMedia.name,
-          photo: updatedMedia.photo,
-          brand: updatedMedia.brand,
-          type: updatedMedia.type,
-          price: updatedMedia.price,
-          description: updatedMedia.description,
-          rating: updatedMedia.rating,
-        },
-      };
-      const result = await mediaCollection.updateOne(filter, media, options);
-      res.send(result);
-    })
+    app.put("/media/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const options = { upsert: true };
+        const updatedMedia = req.body;
+        const media = {
+          $set: {
+            name: updatedMedia.name,
+            photo: updatedMedia.photo,
+            brand: updatedMedia.brand,
+            type: updatedMedia.type,
+            price: updatedMedia.price,
+            description: updatedMedia.description,
+            rating: updatedMedia.rating,
+          },
+        };
+        const result = await mediaCollection.updateOne(filter, media, options);
+
+        if (result.matchedCount === 0) {
+          res.status(404).send("Media not found");
+        } else {
+          res.send("Media updated successfully");
+        }
+      } catch (error) {
+        console.error("Error updating media:", error);
+        res.status(500).send("Internal server error");
+      }
+    });
 
     app.delete('/media/:id', async (req, res) => {
       const id = req.params.id;
@@ -90,6 +130,8 @@ async function run() {
       const users = await cursor.toArray();
       res.send(users)
     })
+
+    
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
@@ -97,7 +139,7 @@ async function run() {
     );
   } finally {
     // Ensures that the client will close when you finish/error
-    // await client.close();
+    await client.close();
   }
 }
 run().catch(console.dir);
